@@ -17,7 +17,6 @@ public class ChaseState_N : IEnemyState
 
     public void Execute()
     {
-        //Debug.Log("Chasing");
         if (enemy.IsInAttackRadius())
         {
             enemy.ChangeState(new AttackState_N());

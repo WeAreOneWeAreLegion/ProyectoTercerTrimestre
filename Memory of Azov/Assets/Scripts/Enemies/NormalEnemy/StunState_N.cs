@@ -21,12 +21,10 @@ public class StunState_N : IEnemyState
 
     public void Execute()
     {
-        Debug.Log("Stunned");
         stunTimer += Time.deltaTime;
 
         if (stunTimer >= enemy.GetStunTimer())
             enemy.ChangeState(new ChaseState_N());
-
     }
 
     public void Exit()

@@ -73,10 +73,7 @@ public class ConectionScript : LightenableObject {
             DisableStartRooms();
         }
 
-        if (currentDoorType == DoorType.Hidden)
-        {
-            target = GameManager.Instance.GetPlayer();
-        }
+        target = GameManager.Instance.GetPlayer();
 
         lighteningParticles.SetActive(false);
     }

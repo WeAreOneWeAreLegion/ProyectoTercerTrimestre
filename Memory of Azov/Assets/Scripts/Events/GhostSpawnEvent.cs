@@ -8,10 +8,12 @@ public class GhostSpawnEvent : MonoBehaviour {
     [Header("\tGame Designers Variables")]
     [Tooltip("Tiene mas de un evento hermano?")]
     public bool hasMoreTriggersThisEvent;
-    [Tooltip("Donde debe aparecer el fantasma")]
-    public Transform spawnPosition;
+    [Tooltip("La referencia de como sera el fantasma a generar")]
+    public EnemySO enemyData;
 
     [Header("\t    Own Script Variables")]
+    [Tooltip("Donde debe aparecer el fantasma")]
+    public Transform spawnPosition;
     [Tooltip("Eventos hermanos si los hubiera")]
     public List<GhostSpawnEvent> theOtherEvents;
     #endregion
@@ -33,7 +35,7 @@ public class GhostSpawnEvent : MonoBehaviour {
 
         Physics.Raycast(ray, out hit, 100, LayerMask.GetMask("FloorLayer"));
 
-        GameObject go = EnemyManager.Instance.GetEnemy(hit.transform != null ? hit.transform.parent : this.transform);
+        GameObject go = EnemyManager.Instance.GetEnemy(hit.transform != null ? hit.transform.parent : this.transform, enemyData);
 
         go.transform.position = new Vector3(spawnPosition.position.x, hit.point.y + EnemyManager.Instance.enemyFloorYOffset, spawnPosition.position.z);
 

@@ -24,7 +24,7 @@ public class CameraBehaviour : MonoSingleton<CameraBehaviour> {
 
     [Header("CrossDoor Variables")]
     [Tooltip("Cuantos segundos tardara la camara en moverse de la entrada de la puerta a la salida de la puerta")]
-    [Range(0, 40)] public float crossDoorCameraSpeed = 10;
+    [Range(0, 40)] public float crossDoorCameraSpeed = 0.2f;
 
     [Header("\t    Own Script Variables")]
     [Tooltip("Target a seguir")]

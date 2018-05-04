@@ -12,11 +12,12 @@ public class Enemy_N : Enemy
         ChangeState(new AwakeState_N());
     }
 
-    public override void ResetVariables()
+    public override void SetUpEnemyVariables(EnemySO enemyData)
     {
-        base.ResetVariables();
+        base.SetUpEnemyVariables(enemyData);
 
-        ChangeState(new AwakeState_N());
+        if (currentState != null)
+            ChangeState(new AwakeState_N());
     }
     #endregion
 }

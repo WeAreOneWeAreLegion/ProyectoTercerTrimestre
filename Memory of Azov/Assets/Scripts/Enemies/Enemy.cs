@@ -114,6 +114,35 @@ public class Enemy : LightenableObject {
 
     }
 
+    #region Set-Up Method
+    public virtual void SetUpEnemyVariables(EnemySO enemyData)
+    {
+        speed = enemyData.speed;
+        rotationSpeed = enemyData.rotationSpeed;
+        oscilationSpeed = enemyData.oscilationSpeed;
+        speedFactorWhenLightened = enemyData.speedFactorWhenLightened;
+        oscilationsPerSecond = enemyData.oscilationsPerSecond;
+        oscilationAmplitude = enemyData.oscilationAmplitude;
+        immediateFacing = enemyData.immediateFacing;
+        oscillationMovement = enemyData.oscillationMovement;
+
+        initialHp = enemyData.initialHp;
+        timeStuned = enemyData.timeStuned;
+
+        ghostDamage = enemyData.ghostDamage;
+        attackRadius = enemyData.attackRadius;
+        attackDelay = enemyData.attackDelay;
+
+        itemToDrop = enemyData.itemToDrop;
+
+        //Start variables
+        initialSpeed = speed;
+        currentHp = initialHp;
+        oscilatorLifeTime = -0.75f;
+        target = GameManager.Instance.GetPlayer();
+    }
+    #endregion
+
     #region State Machine Method
     public void ChangeState(IEnemyState newState)
     {
@@ -200,24 +229,6 @@ public class Enemy : LightenableObject {
         {
             target.GetComponent<PlayerController>().RecieveDamage(ghostDamage);
         }
-    }
-
-    public virtual void ResetVariables()
-    {
-        if (myRGB == null)
-        {
-            return;
-        }
-
-        currentHp = initialHp;
-        oscilatorLifeTime = -0.75f;
-        target = GameManager.Instance.GetPlayer();
-
-        myRGB.velocity = Vector3.zero;
-
-        GameManager.Instance.CreateEnemyHUD(this.transform, (int)currentHp);
-
-        myAudioSource.Play();
     }
 
     public void Invencible()
@@ -319,6 +330,7 @@ public class Enemy : LightenableObject {
             if (go != null)
                 go.transform.position = transform.position;
 
+            myRGB.velocity = Vector3.zero;
             EnemyManager.Instance.ReturnEnemy(gameObject);
         }
 
