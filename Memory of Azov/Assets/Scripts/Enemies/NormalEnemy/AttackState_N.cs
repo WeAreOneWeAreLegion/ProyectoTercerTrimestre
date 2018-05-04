@@ -24,8 +24,6 @@ public class AttackState_N : IEnemyState
 
     public void Execute()
     {
-        Debug.Log("Attacking");
-
         if (isAttacking)
         {
             if (!enemy.IsAttackAnimationPlaying())

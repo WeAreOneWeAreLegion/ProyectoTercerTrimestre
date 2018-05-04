@@ -21,6 +21,7 @@ public class PlayerController : MonoBehaviour {
     [Range(0,15)] public float autoFacingSpeed = 7f;
     [Tooltip("Velocidad de rotacion de la linterna (Hacia arriba i hacia abajo)")]
     [Range(0,90)] public float lanternRotationSpeed = 50;
+    [Range(0,180)] public float angleToStartMoving = 10f;
 
     [Header("Lantern Variables")]
     [Tooltip("Daño que hace la linterna")]
@@ -55,6 +56,8 @@ public class PlayerController : MonoBehaviour {
     [Header("Action Variables")]
     [Tooltip("Distancia a la cual el player realizara una accion (Linea central Verde)")]
     [Range(0, 5)] public float actionDistance = 2.5f;
+    [Tooltip("Distancia a la cual el player realizara una accion (Linea central Verde)")]
+    [Range(0, 2)] public float timeBetweenAim = 0.5f;
 
     [Header("Health Variables")]
     [Tooltip("Vida inicial del personaje")]
@@ -75,12 +78,15 @@ public class PlayerController : MonoBehaviour {
 
     #region Private Variables
     private int currentHp;
-    private float xRotationValue;
+    private float xLanternRotationValue;
     private float yRotationValue;
     private bool areLightsDecreased;
     private bool areLightsIncreased;
     private bool canMove;
+    private bool stopByAiming;
     private bool isLightCharging;
+    private bool isMoving;
+    private bool autoFace;
     private Vector3 direction;
     private Vector3 faceDirection;
 
@@ -95,10 +101,11 @@ public class PlayerController : MonoBehaviour {
     //Timer variables
     private float lightChargingTimer;
     private float delayBetweenChargedShotTimer;
+    private float aimTimer;
 
     //Input variables
-    private float xInput, zInput;
-    private float xMouse, yMouse;
+    private float xMove, zMove;
+    private float xRotation, yRotation;
 
     //Light lerp values
     private bool lightEnabled = true;
@@ -159,7 +166,8 @@ public class PlayerController : MonoBehaviour {
             Inputs();
 
             Move();
-            Rotate();
+            RotateByJoystick();
+            RotateByMove();
 
             CheckLight();
             LightDamaging();
@@ -199,6 +207,17 @@ public class PlayerController : MonoBehaviour {
         if (GameManager.Instance.GetActionButtonInputDown())
             Action();
 
+        if (GameManager.Instance.GetAimButton() && !independentFacing)
+        {
+            independentFacing = true;
+            StopMovementByAim();
+        }
+        else if(!GameManager.Instance.GetAimButton() && independentFacing)
+        {
+            independentFacing = false;
+            StopMovementByAim();
+        }
+
         if (!canMove) //Doble check if action done
         {
             return;
@@ -210,66 +229,124 @@ public class PlayerController : MonoBehaviour {
         if (GameManager.Instance.GetIntensityButtonUp() && isLightCharging)
             ReleaseLight();
 
-        if (GameManager.Instance.GetSwitchButtonInputDown())
+        if (GameManager.Instance.GetSwitchButtonInput())
         {
             lightEnabled = true;
             SwitchLight();
         }
-
-        if (GameManager.Instance.GetSwitchButtonInputUp())
+        else
         {
             lightEnabled = false;
             SwitchLight();
         }
 
-        xInput = GameManager.Instance.GetMovementX();
-        zInput = GameManager.Instance.GetMovementY();
+        xMove = GameManager.Instance.GetMovementX();
+        zMove = GameManager.Instance.GetMovementY();
 
-        xMouse = GameManager.Instance.GetRotationX();
-        yMouse = GameManager.Instance.GetRotationY();
+        xRotation = GameManager.Instance.GetRotationX();
+        yRotation = GameManager.Instance.GetRotationY();
     }
 
     private void Move()
     {
         direction = Vector3.zero;
 
-        direction.x = xInput;
-        direction.z = zInput;
+        direction.x = xMove;
+        direction.z = zMove;
 
-        myCharController.Move(((direction * speed) + Physics.gravity) * Time.deltaTime);
-
-        if (!independentFacing || !canMove)
+        if (!independentFacing && canMove)
         {
             //Face where you go
 
-            if (direction != Vector3.zero && xMouse == 0)
+            if (direction != Vector3.zero)
             {
-                direction.Normalize();
-                faceDirection = direction;
+                if (!(!isMoving && autoFace))
+                {
+                    faceDirection = direction;
+
+                    if (Vector3.Angle(faceDirection, transform.forward) > 180 - angleToStartMoving)
+                    {
+                        //Debug.Log("Autofacing from: "+transform.forward+" to: "+faceDirection);
+                        autoFace = true;
+                    }
+                    else
+                    {
+                        autoFace = false;
+                    }
+                }
             }
-            else if(xMouse != 0)
+            else
             {
-                return;
+                isMoving = false;
+                if (!autoFace)
+                {
+                    faceDirection = transform.forward;
+                }
             }
 
+            if (((Vector3.Angle(faceDirection, transform.forward) <= angleToStartMoving && !isMoving && !autoFace) || isMoving) && direction != Vector3.zero)
+            {
+
+                myCharController.Move(((transform.forward * direction.magnitude * speed) + Physics.gravity) * Time.deltaTime);
+                isMoving = true;
+            }
+
+        }
+        else if (independentFacing && canMove)
+        {
+            myCharController.Move(((direction * speed) + Physics.gravity) * Time.deltaTime);
+        }
+        else if (!canMove)
+        {
             transform.forward = Vector3.Slerp(transform.forward, faceDirection, autoFacingSpeed * Time.deltaTime);
         }
 
-        xInput = zInput = 0;
+
     }
 
-    private void Rotate()
+    private void RotateByJoystick()
     {
-        transform.Rotate(Vector3.up, xMouse * rotationSpeed * Time.deltaTime);
+        if (xMove == 0 && zMove == 0 || independentFacing)
+            transform.Rotate(Vector3.up, xRotation * rotationSpeed * Time.deltaTime);
 
-        if (!independentFacing && xMouse != 0)
+        xLanternRotationValue = Mathf.Clamp(xLanternRotationValue + yRotation * lanternRotationSpeed * Time.deltaTime, -topLanternAngle, bottomLanternAngle);
+
+        lantern.localRotation = Quaternion.Euler(xLanternRotationValue, 0, 0);
+    }
+
+    private void RotateByMove()
+    {
+        if ((!independentFacing && canMove && (xMove != 0 || zMove != 0)) || autoFace)
         {
-            faceDirection = transform.forward;
+            float extraSpeed = autoFace ? 3.5f : 3f;
+
+            if (!isMoving)
+            {
+                if (Vector3.Angle(faceDirection, transform.forward) > angleToStartMoving)
+                {
+                    transform.Rotate(Vector3.up, (-Mathf.Sign(Vector3.SignedAngle(faceDirection, transform.forward, transform.up))) * rotationSpeed * extraSpeed * Time.deltaTime);
+                }
+                else if (faceDirection != transform.forward || autoFace)
+                {
+                    transform.forward = faceDirection;
+                    autoFace = false;
+                }
+            }
+            else
+            {
+                if (Vector3.Angle(faceDirection, transform.forward) > angleToStartMoving)
+                {
+                    transform.Rotate(Vector3.up, (-Mathf.Sign(Vector3.SignedAngle(faceDirection, transform.forward, transform.up))) * rotationSpeed * extraSpeed * Time.deltaTime);
+                }
+                else if (faceDirection != transform.forward || autoFace)
+                {
+                    transform.forward = faceDirection;
+                    autoFace = false;
+                }
+            }
         }
 
-        xRotationValue = Mathf.Clamp(xRotationValue + yMouse * lanternRotationSpeed * Time.deltaTime, -topLanternAngle, bottomLanternAngle);
-
-        lantern.localRotation = Quaternion.Euler(xRotationValue, 0, 0);
+        xMove = zMove = 0;
     }
 
     private void CheckLight()
@@ -393,6 +470,21 @@ public class PlayerController : MonoBehaviour {
 
     private void Timers()
     {
+        if (!canMove && stopByAiming)
+        {
+            Debug.Log("Time stopped "+aimTimer);
+            aimTimer += Time.deltaTime;
+
+            if (aimTimer >= timeBetweenAim)
+            {
+                Debug.Log("Time finished");
+                canMove = true;
+                stopByAiming = false;
+
+                aimTimer = 0;
+            }
+        }
+
         if (isLightCharging && lightChargingTimer < 1)
         {
             lightChargingTimer += Time.deltaTime / timeForMaxCharged;
@@ -421,7 +513,7 @@ public class PlayerController : MonoBehaviour {
     {
         if (!canMove)
         {
-            if (!myAudioSource.isPlaying)
+            if (!myAudioSource.isPlaying && !stopByAiming)
             {
                 MoveAgain();
             }
@@ -622,6 +714,13 @@ public class PlayerController : MonoBehaviour {
         canMove = false;
         lightEnabled = true;
         SwitchLight();
+    }
+
+    private void StopMovementByAim()
+    {
+        stopByAiming = true;
+        canMove = false;
+        aimTimer = 0;
     }
     #endregion
 

@@ -12,6 +12,8 @@ public class TransparentObject : MonoBehaviour {
     public bool spawnGem;
     [Tooltip("Llamo a todos los fantasmas de la sala?")]
     public bool spawnAllGhosts;
+    [Tooltip("La referencia de como sera el fantasma a generar")]
+    public EnemySO enemyData;
 
     [Header("\t    Own Script Variables")]
     [Tooltip("Soy un muro?")]
@@ -73,18 +75,38 @@ public class TransparentObject : MonoBehaviour {
         }
         if (isMaterialHidden)
         {
-            if (Mathf.Abs((Camera.main.transform.position - transform.position).z) + GameManager.Instance.transparencyOffsetForward > Mathf.Abs((Camera.main.transform.position - player.position).z) ||
-                (Mathf.Abs((transform.position - player.position).x) > GameManager.Instance.transparencyOffsetLateral && !isDoor))
+            if (isWall)
             {
-                ShowMaterial();
+                if (Mathf.Abs((Camera.main.transform.position - transform.position).z) > Mathf.Abs((Camera.main.transform.position - player.position).z))
+                {
+                    ShowMaterial();
+                }
+            }
+            else
+            {
+                if (Mathf.Abs((Camera.main.transform.position - transform.position).z) + GameManager.Instance.transparencyOffsetForward > Mathf.Abs((Camera.main.transform.position - player.position).z) ||
+                    (Mathf.Abs((transform.position - player.position).x) > GameManager.Instance.transparencyOffsetLateral && !isDoor))
+                {
+                    ShowMaterial();
+                }
             }
         }
         else
         {
-            if (Mathf.Abs((Camera.main.transform.position - transform.position).z) + GameManager.Instance.transparencyOffsetForward < Mathf.Abs((Camera.main.transform.position - player.position).z) &&
-                Mathf.Abs((transform.position - player.position).x) < GameManager.Instance.transparencyOffsetLateral)
+            if (isWall)
             {
-                HideMaterial();
+                if (Mathf.Abs((Camera.main.transform.position - transform.position).z) < Mathf.Abs((Camera.main.transform.position - player.position).z))
+                {
+                    HideMaterial();
+                }
+            }
+            else
+            {
+                if (Mathf.Abs((Camera.main.transform.position - transform.position).z) + GameManager.Instance.transparencyOffsetForward < Mathf.Abs((Camera.main.transform.position - player.position).z) &&
+                Mathf.Abs((transform.position - player.position).x) < GameManager.Instance.transparencyOffsetLateral)
+                {
+                    HideMaterial();
+                }
             }
         }
     }
@@ -133,7 +155,7 @@ public class TransparentObject : MonoBehaviour {
 
             Physics.Raycast(ray, out hit, 100, LayerMask.GetMask("FloorLayer"));
 
-            GameObject go = EnemyManager.Instance.GetEnemy(hit.transform != null ? hit.transform.parent : this.transform);
+            GameObject go = EnemyManager.Instance.GetEnemy(hit.transform != null ? hit.transform.parent : this.transform, enemyData);
 
             go.transform.position = new Vector3(transform.position.x, hit.point.y + EnemyManager.Instance.enemyFloorYOffset, transform.position.z);
             go.transform.forward = transform.forward;

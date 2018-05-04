@@ -213,12 +213,12 @@ public class GameManager : MonoSingleton<GameManager> {
 
     public float GetRotationX()
     {
-        return isControllerPlaying ? Input.GetAxisRaw("RightJoystickHorizontal") * joystickRotationFactor : Input.GetAxisRaw("Mouse X");
+        return isControllerPlaying ? Input.GetAxis("RightJoystickHorizontal") * joystickRotationFactor : Input.GetAxisRaw("Mouse X");
     }
 
     public float GetRotationY()
     {
-        return isControllerPlaying ? (invertVerticalMovement ? -Input.GetAxisRaw("RightJoystickVertical") * joystickRotationFactor : Input.GetAxisRaw("RightJoystickVertical") * joystickRotationFactor) : (invertVerticalMovement ? -Input.GetAxisRaw("Mouse Y") : Input.GetAxisRaw("Mouse Y"));
+        return isControllerPlaying ? (invertVerticalMovement ? -Input.GetAxis("RightJoystickVertical") * joystickRotationFactor : Input.GetAxis("RightJoystickVertical") * joystickRotationFactor) : (invertVerticalMovement ? -Input.GetAxisRaw("Mouse Y") : Input.GetAxisRaw("Mouse Y"));
     }
 
     public bool GetActionButtonInputDown()
@@ -226,14 +226,9 @@ public class GameManager : MonoSingleton<GameManager> {
         return isControllerPlaying ? Input.GetButtonDown("AButton") : Input.GetKeyDown(KeyCode.F);
     }
 
-    public bool GetSwitchButtonInputDown()
+    public bool GetSwitchButtonInput()
     {
-        return isControllerPlaying ? Input.GetButtonDown("XButton") : Input.GetButtonDown("Fire2");
-    }
-
-    public bool GetSwitchButtonInputUp()
-    {
-        return isControllerPlaying ? Input.GetButtonUp("XButton") : Input.GetButtonUp("Fire2");
+        return isControllerPlaying ? Input.GetButton("XButton") : Input.GetKey(KeyCode.Q);
     }
 
     public bool GetBButtonInputDown()
@@ -254,6 +249,11 @@ public class GameManager : MonoSingleton<GameManager> {
     public bool GetIntensityButtonUp()
     {
         return isControllerPlaying ? Input.GetAxisRaw("RTrigger") < 0.2f && Input.GetAxisRaw("LTrigger") < 0.2f : Input.GetButtonUp("Fire1");
+    }
+
+    public bool GetAimButton()
+    {
+        return isControllerPlaying ? Input.GetButton("RButton") || Input.GetButton("LButton") : Input.GetButtonDown("Fire2");
     }
 
     public bool GetStartButtonDown()
