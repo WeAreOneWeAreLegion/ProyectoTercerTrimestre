@@ -128,7 +128,7 @@ public class PlayerController : MonoBehaviour {
 
     private void Awake()
     {
-        GameManager.Instance.LockMouse();
+        InputsManager.Instance.LockMouse();
     }
 
     private void Start()
@@ -193,10 +193,10 @@ public class PlayerController : MonoBehaviour {
     {
         //Actions always performable
         if (Input.GetKeyDown(KeyCode.Escape))
-            GameManager.Instance.UnlockMouse();
+            InputsManager.Instance.UnlockMouse();
 
         if (Input.GetMouseButtonDown(0))
-            GameManager.Instance.LockMouse();
+            InputsManager.Instance.LockMouse();
 
         if (!canMove)
         {
@@ -204,32 +204,21 @@ public class PlayerController : MonoBehaviour {
         }
 
         //Actions limited by canMove
-        if (GameManager.Instance.GetActionButtonInputDown())
+        if (InputsManager.Instance.GetActionButtonInputDown())
             Action();
-
-        if (GameManager.Instance.GetAimButton() && !independentFacing)
-        {
-            independentFacing = true;
-            StopMovementByAim();
-        }
-        else if(!GameManager.Instance.GetAimButton() && independentFacing)
-        {
-            independentFacing = false;
-            StopMovementByAim();
-        }
 
         if (!canMove) //Doble check if action done
         {
             return;
         }
 
-        if (GameManager.Instance.GetIntensityButtonDown() && delayBetweenChargedShotTimer >= 1 && !isLightCharging)
+        if (InputsManager.Instance.GetIntensityButtonDown() && delayBetweenChargedShotTimer >= 1 && !isLightCharging)
             ChargeLight();
 
-        if (GameManager.Instance.GetIntensityButtonUp() && isLightCharging)
+        if (InputsManager.Instance.GetIntensityButtonUp() && isLightCharging)
             ReleaseLight();
 
-        if (GameManager.Instance.GetSwitchButtonInput())
+        if (InputsManager.Instance.GetSwitchButtonInput())
         {
             lightEnabled = true;
             SwitchLight();
@@ -240,11 +229,11 @@ public class PlayerController : MonoBehaviour {
             SwitchLight();
         }
 
-        xMove = GameManager.Instance.GetMovementX();
-        zMove = GameManager.Instance.GetMovementY();
+        xMove = InputsManager.Instance.GetMovementX();
+        zMove = InputsManager.Instance.GetMovementY();
 
-        xRotation = GameManager.Instance.GetRotationX();
-        yRotation = GameManager.Instance.GetRotationY();
+        xRotation = InputsManager.Instance.GetRotationX();
+        yRotation = InputsManager.Instance.GetRotationY();
     }
 
     private void Move()
@@ -320,29 +309,14 @@ public class PlayerController : MonoBehaviour {
         {
             float extraSpeed = autoFace ? 3.5f : 3f;
 
-            if (!isMoving)
+            if (Vector3.Angle(faceDirection, transform.forward) > angleToStartMoving)
             {
-                if (Vector3.Angle(faceDirection, transform.forward) > angleToStartMoving)
-                {
-                    transform.Rotate(Vector3.up, (-Mathf.Sign(Vector3.SignedAngle(faceDirection, transform.forward, transform.up))) * rotationSpeed * extraSpeed * Time.deltaTime);
-                }
-                else if (faceDirection != transform.forward || autoFace)
-                {
-                    transform.forward = faceDirection;
-                    autoFace = false;
-                }
+                transform.Rotate(Vector3.up, (-Mathf.Sign(Vector3.SignedAngle(faceDirection, transform.forward, transform.up))) * rotationSpeed * extraSpeed * Time.deltaTime);
             }
-            else
+            else if (faceDirection != transform.forward || autoFace)
             {
-                if (Vector3.Angle(faceDirection, transform.forward) > angleToStartMoving)
-                {
-                    transform.Rotate(Vector3.up, (-Mathf.Sign(Vector3.SignedAngle(faceDirection, transform.forward, transform.up))) * rotationSpeed * extraSpeed * Time.deltaTime);
-                }
-                else if (faceDirection != transform.forward || autoFace)
-                {
-                    transform.forward = faceDirection;
-                    autoFace = false;
-                }
+                transform.forward = faceDirection;
+                autoFace = false;
             }
         }
 
@@ -449,6 +423,7 @@ public class PlayerController : MonoBehaviour {
 
         if (isMaxIntensity)
         {
+            Debug.Log("Flashing");
             foreach (GameObject l in lightenedPuzzlesInRadius)
             {
                 LightenableObject co = l.GetComponent<LightenableObject>();
@@ -642,14 +617,7 @@ public class PlayerController : MonoBehaviour {
 
             StopPlusSoundRequired(SoundManager.SoundRequest.P_Knock);
         }
-        else
-        {
-            //if (!myAudioSource.isPlaying && soundCallTimer >= timeBetweenCalls)
-            //{
-            //    myAudioSource.clip = GameManager.Instance.GetSoundManager().GetSoundByRequest(SoundManager.SoundRequest.Call);
-            //    myAudioSource.Play();
-            //}
-        }
+
     }
 
     private void InstaLightIntensity()
@@ -659,6 +627,9 @@ public class PlayerController : MonoBehaviour {
 
     private void ChargeLight()
     {
+        CombateMode();
+        aimTimer = timeBetweenAim / 2;
+
         isLightCharging = true;
         lightChargingTimer = 0;
 
@@ -669,6 +640,9 @@ public class PlayerController : MonoBehaviour {
 
     private void ReleaseLight()
     {
+        CalmMode();
+        aimTimer = timeBetweenAim / 2;
+
         isLightCharging = false;
         if (lightChargingTimer > 0.2f)
         {
@@ -718,6 +692,8 @@ public class PlayerController : MonoBehaviour {
 
     private void StopMovementByAim()
     {
+        faceDirection = transform.forward;
+
         stopByAiming = true;
         canMove = false;
         aimTimer = 0;
@@ -765,6 +741,18 @@ public class PlayerController : MonoBehaviour {
         currentState = newState;
     }
 
+    public void CombateMode()
+    {
+        independentFacing = true;
+        StopMovementByAim();
+    }
+
+    public void CalmMode()
+    {
+        independentFacing = false;
+        StopMovementByAim();
+    }
+
     public void IncreaseHealth(int heal)
     {
         currentHp += heal;
@@ -789,9 +777,11 @@ public class PlayerController : MonoBehaviour {
         GameManager.Instance.ModifyHp(currentHp);
     }
 
-    public void ChangeControlMode()
+    public Vector3 GetOutsideLightPoint(Vector3 referencePoint)
     {
-        independentFacing = !independentFacing;
+
+
+        return Vector3.zero;
     }
 
     public bool IsHighLigthening()

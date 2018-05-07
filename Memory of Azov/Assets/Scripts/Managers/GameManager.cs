@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,16 +8,9 @@ public class GameManager : MonoSingleton<GameManager> {
     public enum ButtonRequest { A, B, X, Y, RB, LB, RT, LT }
 
     #region Public Variables
-    [Header("\tGame Designers Variables")]
+    [Header("\t--Game Designers Variables--")]
     [Tooltip("Muestra los fps, en caso contrario los esconde automaticamente")]
     public bool showFPS;
-    [Header("Input Variables")]
-    [Tooltip("Esta jugando con controlador, caso contrario controles de pc")]
-    public bool isControllerPlaying;
-    [Tooltip("Invertir el control vertical del joystick de rotacion")]
-    public bool invertVerticalMovement;
-    [Tooltip("Cuantas veces girara mas rapido el joystick")]
-    [Range(1, 10)] public float joystickRotationFactor = 3;
 
     [Header("Materials Variables")]
     [Tooltip("Distancia extra para no hacer invisible los objetos cuando estan a la misma distancia frontal que el personaje principal")]
@@ -34,7 +26,7 @@ public class GameManager : MonoSingleton<GameManager> {
     [Tooltip("La cantidad total de gemas en partida ---- Esta variable pasara a automatizarse en breves")]
     public int maxNumOfGems = 4;
 
-    [Header("\t    Own Script Variables")]
+    [Header("\t    --Own Script Variables--")]
     [Header("Player Variables")]
     [Tooltip("Referencia del player")]
     public PlayerController player;
@@ -70,8 +62,6 @@ public class GameManager : MonoSingleton<GameManager> {
     public Text gemsText;
     [Tooltip("Referencia a la sombra del texto de gemas")]
     public Text gemsTextShadow;
-    [Tooltip("Referencia al texto de control de movimiento actual")]
-    public Text currentMoveControlMode;
     [Tooltip("Referencia al texto de control vertical actual")]
     public Text currentYControlMode;
     [Tooltip("Referencia al texto de fps")]
@@ -116,7 +106,6 @@ public class GameManager : MonoSingleton<GameManager> {
             fpsText.gameObject.SetActive(true);
 
 
-        ModifyControlModeInfo();
         ModifyYModeInfo();
     }
 
@@ -125,7 +114,7 @@ public class GameManager : MonoSingleton<GameManager> {
         if (showFPS)
             ShowFPS();
 
-        if (GetStartButtonDown())
+        if (InputsManager.Instance.GetStartButtonDown())
             PauseGame();
 
         if (isGamePaused)
@@ -136,6 +125,8 @@ public class GameManager : MonoSingleton<GameManager> {
     public void UnblockPlayerDoors()
     {
         combateMode = false;
+
+        player.CalmMode();
 
         Ray ray;
         RaycastHit hit;
@@ -155,6 +146,8 @@ public class GameManager : MonoSingleton<GameManager> {
     public void BlockPlayerDoors()
     {
         combateMode = true;
+
+        player.CombateMode();
 
         Ray ray;
         RaycastHit hit;
@@ -180,90 +173,6 @@ public class GameManager : MonoSingleton<GameManager> {
             RenderSettings.ambientIntensity = 1;
         else
             RenderSettings.ambientIntensity = 0;
-    }
-    #endregion
-
-    #region Input Methods
-    public void InvertY()
-    {
-        invertVerticalMovement = !invertVerticalMovement;
-    }
-
-    public void LockMouse()
-    {
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-    }
-
-    public void UnlockMouse()
-    {
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-    }
-
-	public float GetMovementX()
-    {
-        return isControllerPlaying ? Input.GetAxis("LeftJoystickHorizontal") : Input.GetAxisRaw("Horizontal");
-    }
-
-    public float GetMovementY()
-    {
-        return isControllerPlaying ? Input.GetAxis("LeftJoystickVertical") : Input.GetAxisRaw("Vertical");
-    }
-
-    public float GetRotationX()
-    {
-        return isControllerPlaying ? Input.GetAxis("RightJoystickHorizontal") * joystickRotationFactor : Input.GetAxisRaw("Mouse X");
-    }
-
-    public float GetRotationY()
-    {
-        return isControllerPlaying ? (invertVerticalMovement ? -Input.GetAxis("RightJoystickVertical") * joystickRotationFactor : Input.GetAxis("RightJoystickVertical") * joystickRotationFactor) : (invertVerticalMovement ? -Input.GetAxisRaw("Mouse Y") : Input.GetAxisRaw("Mouse Y"));
-    }
-
-    public bool GetActionButtonInputDown()
-    {
-        return isControllerPlaying ? Input.GetButtonDown("AButton") : Input.GetKeyDown(KeyCode.F);
-    }
-
-    public bool GetSwitchButtonInput()
-    {
-        return isControllerPlaying ? Input.GetButton("XButton") : Input.GetKey(KeyCode.Q);
-    }
-
-    public bool GetBButtonInputDown()
-    {
-        return isControllerPlaying ? Input.GetButtonDown("BButton") : Input.GetKeyDown(KeyCode.E);
-    }
-
-    public bool GetYButtonInputDown()
-    {
-        return isControllerPlaying ? Input.GetButtonDown("YButton") : Input.GetKeyDown(KeyCode.Q);
-    }
-
-    public bool GetIntensityButtonDown()
-    {
-        return isControllerPlaying ? Input.GetAxisRaw("RTrigger") > 0.2f || Input.GetAxisRaw("LTrigger") > 0.2f : Input.GetButtonDown("Fire1");
-    }
-
-    public bool GetIntensityButtonUp()
-    {
-        return isControllerPlaying ? Input.GetAxisRaw("RTrigger") < 0.2f && Input.GetAxisRaw("LTrigger") < 0.2f : Input.GetButtonUp("Fire1");
-    }
-
-    public bool GetAimButton()
-    {
-        return isControllerPlaying ? Input.GetButton("RButton") || Input.GetButton("LButton") : Input.GetButtonDown("Fire2");
-    }
-
-    public bool GetStartButtonDown()
-    {
-        return isControllerPlaying ? Input.GetButtonUp("StartButton") : Input.GetKeyDown(KeyCode.P);
-    }
-
-    public bool GetSelectButtonDown()
-    {
-        return isControllerPlaying ? Input.GetButtonUp("SelectButton") : Input.GetKeyDown(KeyCode.Escape);
     }
     #endregion
 
@@ -380,39 +289,16 @@ public class GameManager : MonoSingleton<GameManager> {
     #region Pause Methods
     private void PauseActions()
     {
-        if (GetBButtonInputDown())
+        if (InputsManager.Instance.GetChangeColorButtonInputDown())
         {
-            player.ChangeControlMode();
-            ModifyControlModeInfo();
-        }
-
-        if (GetYButtonInputDown())
-        {
-            InvertY();
+            InputsManager.Instance.InvertY();
             ModifyYModeInfo();
-        }
-
-        if (GetSelectButtonDown())
-            QuitGame();
-    }
-
-    private void ModifyControlModeInfo ()
-    {
-        if (player.independentFacing)
-        {
-            //Sidestep
-            currentMoveControlMode.text = "Sidestep";
-        }
-        else
-        {
-            //Standard
-            currentMoveControlMode.text = "Standard";
         }
     }
 
     private void ModifyYModeInfo ()
     {
-        if (invertVerticalMovement)
+        if (InputsManager.Instance.invertVerticalRotation)
         {
             //Inverted (Modo actual)
             currentYControlMode.text = "Not-Inverted";

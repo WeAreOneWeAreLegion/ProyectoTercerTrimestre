@@ -1,26 +1,39 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 
 public class CameraBehaviour : MonoSingleton<CameraBehaviour> {
 
-    public enum CamState { Following, CrossDoor, Cinematic }
+    public enum CameraState { Following, CrossDoor, Cinematic }
+    public enum CameraLookState { Normal, LookUp, LookDown }
+
+    [System.Serializable]
+    public struct CameraLook
+    {
+        [Tooltip("Distancia que mantiene la camara respecto al target actual")]
+        [Range(5, 120)] public float cameraDistance;
+        [Tooltip("Altura que mantiene la camara respecto al target actual")]
+        [Range(0, 4)] public float cameraYOffset;
+        [Tooltip("Angulo que mantiene la camara respecto al target actual")]
+        [Range(-10, 90)] public float cameraAngle;
+    }
 
     #region Public Variables
     [Header("\tGame Designers Variables")]
-    [Tooltip("Distancia que mantiene la camara respecto al target actual")]
-    [Range(5,120)] public float cameraDistance = 10f;
-    [Tooltip("Altura que mantiene la camara respecto al target actual")]
-    [Range(0,4)] public float cameraYOffset = 2f;
-    [Tooltip("Angulo que mantiene la camara respecto al target actual")]
-    [Range(0,90)] public float cameraAngle = 25f;
+    [Header("Camera Variables")]
     [Tooltip("Velocidad de la camara al apuntar al target actual")]
     [Range(0,40)] public float cameraFollowSpeed = 15f;
+    [Tooltip("Velocidad de rotacion de la camara al apuntar al target actual")]
+    [Range(0,40)] public float cameraAngularSpeed = 15f;
     [Tooltip("La longitud en la cual el player parará de moverse al chochar una pared lateral (Linea Blanca)")]
     [Range(0,10)] public float sideDistance = 4.5f;
     [Tooltip("La longitud en la cual el player parará de moverse al chochar una trasera lateral (Linea Azul)")]
     [Range(0,10)] public float backwardsDistance = 4.5f;
+
+    [Header("Camera Types")]
+    public CameraLook normalCamera;
+    public CameraLook lookUpCamera;
+    public CameraLook lookDownCamera;
+    public CameraLookState currentCameraLookState = CameraLookState.Normal;
 
     [Header("CrossDoor Variables")]
     [Tooltip("Cuantos segundos tardara la camara en moverse de la entrada de la puerta a la salida de la puerta")]
@@ -37,13 +50,15 @@ public class CameraBehaviour : MonoSingleton<CameraBehaviour> {
     private float xLeftWall;
     private float xRightWall;
     private float zBackWall;
+    private float currentRotation;
     private bool wallsFound;
     private bool backwardDistanceSet;
     private float backwardFirstDistance;
 
     private Vector3 moveAtPoint;
 
-    private CamState currentState;
+    private CameraState currentState;
+    private CameraLook currentCameraLook;
     private Vector3 backwards = Vector3.zero;
 
     private TransparentObject currentWall;
@@ -55,17 +70,33 @@ public class CameraBehaviour : MonoSingleton<CameraBehaviour> {
         {
             target = GameManager.Instance.GetPlayer();
         }
+
+        currentRotation = transform.eulerAngles.x;
+        currentCameraLook = normalCamera;
     }
 
     private void Update ()
     {
+        if (Input.GetKeyDown(KeyCode.Z))
+        {
+            currentCameraLook = normalCamera;
+        }
+        if (Input.GetKeyDown(KeyCode.X))
+        {
+            currentCameraLook = lookUpCamera;
+        }
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            currentCameraLook = lookDownCamera;
+        }
+
         if (Time.timeScale == 0)
             return;
-        if (currentState == CamState.Following)
+        if (currentState == CameraState.Following)
             CameraMovement();
-        else if (currentState == CamState.CrossDoor)
+        else if (currentState == CameraState.CrossDoor)
             CrossDoorMovement();
-        else if (currentState == CamState.Cinematic)
+        else if (currentState == CameraState.Cinematic)
         {   
             //Cinematic
         }
@@ -74,9 +105,9 @@ public class CameraBehaviour : MonoSingleton<CameraBehaviour> {
     #region Following Methods
     private void CameraMovement()
     {
-        if (cameraAngle != transform.rotation.eulerAngles.x)
+        if (currentCameraLook.cameraAngle != transform.eulerAngles.x)
         {
-            transform.rotation = Quaternion.Euler(Vector3.right*cameraAngle);
+            transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(Vector3.right * currentCameraLook.cameraAngle), cameraAngularSpeed * Time.deltaTime);
         }
 
         if (!wallsFound)
@@ -102,6 +133,7 @@ public class CameraBehaviour : MonoSingleton<CameraBehaviour> {
             }
             catch
             {
+                Debug.LogWarning("Error no back wall");
                 EditorApplication.isPaused = true;
             }
 
@@ -112,22 +144,22 @@ public class CameraBehaviour : MonoSingleton<CameraBehaviour> {
         bool leftCollision = Mathf.Abs(target.transform.position.x - xLeftWall) < sideDistance;
         bool backCollision = Mathf.Abs(target.transform.position.z - zBackWall) < backwardsDistance;
 
-        float yPosition = (target.position + (Vector3.up * cameraYOffset) - (transform.forward * cameraDistance)).y;
+        float yPosition = (target.position + (Vector3.up * currentCameraLook.cameraYOffset) - (transform.forward * currentCameraLook.cameraDistance)).y;
 
         if (!rightCollision && !leftCollision && !backCollision)
         {
             //TotalLerp
-            transform.position = Vector3.Lerp(transform.position, target.position + (Vector3.up * cameraYOffset) - (transform.forward * cameraDistance), cameraFollowSpeed * Time.deltaTime);
+            transform.position = Vector3.Lerp(transform.position, target.position + (Vector3.up * currentCameraLook.cameraYOffset) - (transform.forward * currentCameraLook.cameraDistance), cameraFollowSpeed * Time.deltaTime);
         }
         else if (backCollision && (leftCollision || rightCollision))
         {
             if (leftCollision)
             {
-                transform.position = Vector3.Lerp(transform.position, new Vector3(xLeftWall + sideDistance, yPosition, zBackWall - (transform.forward * cameraDistance).z + backwardsDistance), cameraFollowSpeed * Time.deltaTime);
+                transform.position = Vector3.Lerp(transform.position, new Vector3(xLeftWall + sideDistance, yPosition, zBackWall - (transform.forward * currentCameraLook.cameraDistance).z + backwardsDistance), cameraFollowSpeed * Time.deltaTime);
             }
             else
             {
-                transform.position = Vector3.Lerp(transform.position, new Vector3(xRightWall - sideDistance, yPosition, zBackWall - (transform.forward * cameraDistance).z + backwardsDistance), cameraFollowSpeed * Time.deltaTime);
+                transform.position = Vector3.Lerp(transform.position, new Vector3(xRightWall - sideDistance, yPosition, zBackWall - (transform.forward * currentCameraLook.cameraDistance).z + backwardsDistance), cameraFollowSpeed * Time.deltaTime);
             }
             //Clamp to corner position
         }
@@ -135,24 +167,25 @@ public class CameraBehaviour : MonoSingleton<CameraBehaviour> {
         {
             if (leftCollision)
             {
-                transform.position = Vector3.Lerp(transform.position, new Vector3(xLeftWall + sideDistance, yPosition, (target.position - (transform.forward * cameraDistance)).z), cameraFollowSpeed * Time.deltaTime);
+                transform.position = Vector3.Lerp(transform.position, new Vector3(xLeftWall + sideDistance, yPosition, (target.position - (transform.forward * currentCameraLook.cameraDistance)).z), cameraFollowSpeed * Time.deltaTime);
             }
             else
             {
-                transform.position = Vector3.Lerp(transform.position, new Vector3(xRightWall - sideDistance, yPosition, (target.position - (transform.forward * cameraDistance)).z), cameraFollowSpeed * Time.deltaTime);
+                transform.position = Vector3.Lerp(transform.position, new Vector3(xRightWall - sideDistance, yPosition, (target.position - (transform.forward * currentCameraLook.cameraDistance)).z), cameraFollowSpeed * Time.deltaTime);
             }
         }
         else //Backwards hit
         {
-            transform.position = Vector3.Lerp(transform.position, new Vector3(target.position.x, yPosition, zBackWall - (transform.forward * cameraDistance).z + backwardsDistance), cameraFollowSpeed * Time.deltaTime);
+            transform.position = Vector3.Lerp(transform.position, new Vector3(target.position.x, yPosition, zBackWall - (transform.forward * currentCameraLook.cameraDistance).z + backwardsDistance), cameraFollowSpeed * Time.deltaTime);
         }
+
     }
     #endregion
 
     #region Cross Door Methods
     private void CrossDoorMovement()
     {
-        transform.position = Vector3.Lerp(transform.position, moveAtPoint + (Vector3.up * cameraYOffset) - (transform.forward * cameraDistance), Time.deltaTime / crossDoorCameraSpeed);
+        transform.position = Vector3.Lerp(transform.position, moveAtPoint + (Vector3.up * currentCameraLook.cameraYOffset) - (transform.forward * currentCameraLook.cameraDistance), Time.deltaTime / crossDoorCameraSpeed);
     }
 
     public void MoveAtPoint(Vector3 referencePoint, bool isRightSide)
@@ -162,15 +195,33 @@ public class CameraBehaviour : MonoSingleton<CameraBehaviour> {
 
     public void EndCrossDoorMovement()
     {
-        ChangeCameraBehaviourState(CamState.Following);
+        ChangeCameraBehaviourState(CameraState.Following);
         ResetWallDetection();
     }
     #endregion
 
     #region Public Methods
-    public void ChangeCameraBehaviourState(CamState newState)
+    public void ChangeCameraBehaviourState(CameraState newState)
     {
         currentState = newState;
+    }
+
+    public void ChangeCameraLookState(CameraLookState newLookState)
+    {
+        currentCameraLookState = newLookState;
+
+        switch (currentCameraLookState)
+        {
+            case CameraLookState.Normal:
+                currentCameraLook = normalCamera;
+                break;
+            case CameraLookState.LookUp:
+                currentCameraLook = lookUpCamera;
+                break;
+            case CameraLookState.LookDown:
+                currentCameraLook = lookDownCamera;
+                break;
+        }
     }
 
     public void ResetWallDetection()
@@ -186,17 +237,30 @@ public class CameraBehaviour : MonoSingleton<CameraBehaviour> {
         if (target == null)
             return;
 
-        if (cameraAngle != transform.eulerAngles.x)
+        switch (currentCameraLookState)
         {
-            transform.rotation = Quaternion.Euler(Vector3.right * cameraAngle);
+            case CameraLookState.Normal:
+                currentCameraLook = normalCamera;
+                break;
+            case CameraLookState.LookUp:
+                currentCameraLook = lookUpCamera;
+                break;
+            case CameraLookState.LookDown:
+                currentCameraLook = lookDownCamera;
+                break;
         }
-        if (cameraDistance != (target.position - transform.position).magnitude)
+
+        if (currentCameraLook.cameraAngle != transform.eulerAngles.x)
         {
-            transform.position = target.position + (Vector3.up * cameraYOffset) - (transform.forward * cameraDistance);
+            transform.rotation = Quaternion.Euler(Vector3.right * currentCameraLook.cameraAngle);
         }
-        if (cameraYOffset != (transform.position - target.position + (transform.forward * cameraDistance)).y)
+        if (currentCameraLook.cameraDistance != (target.position - transform.position).magnitude)
         {
-            transform.position = target.position + (Vector3.up * cameraYOffset) - (transform.forward * cameraDistance);
+            transform.position = target.position + (Vector3.up * currentCameraLook.cameraYOffset) - (transform.forward * currentCameraLook.cameraDistance);
+        }
+        if (currentCameraLook.cameraYOffset != (transform.position - target.position + (transform.forward * currentCameraLook.cameraDistance)).y)
+        {
+            transform.position = target.position + (Vector3.up * currentCameraLook.cameraYOffset) - (transform.forward * currentCameraLook.cameraDistance);
         }
     }
 
@@ -211,8 +275,6 @@ public class CameraBehaviour : MonoSingleton<CameraBehaviour> {
         Gizmos.DrawLine(target.transform.position, target.transform.position - (transform.right * sideDistance));
         Gizmos.color = Color.blue;
         Gizmos.DrawLine(target.transform.position, target.transform.position + (backwards * backwardsDistance));
-        Gizmos.color = Color.red;
-        Gizmos.DrawLine(target.transform.position, target.transform.position + ((transform.position - target.position).normalized * cameraDistance));
     }
     #endregion
 }
