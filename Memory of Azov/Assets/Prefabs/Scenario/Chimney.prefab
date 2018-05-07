@@ -73,6 +73,7 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 4085008286974902}
+  - component: {fileID: 114388241883764028}
   - component: {fileID: 33313285801266790}
   - component: {fileID: 23149065942841992}
   m_Layer: 0
@@ -108,7 +109,6 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 4427789584928016}
-  - component: {fileID: 114725977941863964}
   m_Layer: 0
   m_Name: Chimney
   m_TagString: Untagged
@@ -166,8 +166,8 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1630570261309356}
-  m_LocalRotation: {x: -0, y: -1, z: -0, w: 0}
-  m_LocalPosition: {x: 0.8000003, y: 0.19000006, z: -7.801731}
+  m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: -1.0800012, y: 0.19000006, z: 4.519999}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 4983003274128474}
@@ -492,8 +492,8 @@ Light:
   m_Enabled: 1
   serializedVersion: 8
   m_Type: 0
-  m_Color: {r: 1, g: 0.59533465, b: 0.16176468, a: 1}
-  m_Intensity: 1.38
+  m_Color: {r: 1, g: 0.75735295, b: 0.75735295, a: 1}
+  m_Intensity: 1.8
   m_Range: 21
   m_SpotAngle: 100
   m_CookieSize: 10
@@ -519,12 +519,12 @@ Light:
   m_UseColorTemperature: 0
   m_ShadowRadius: 0
   m_ShadowAngle: 0
---- !u!114 &114725977941863964
+--- !u!114 &114388241883764028
 MonoBehaviour:
   m_ObjectHideFlags: 1
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1630570261309356}
+  m_GameObject: {fileID: 1274246806060084}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a8d75aa0e9cc075419af561b312483aa, type: 3}

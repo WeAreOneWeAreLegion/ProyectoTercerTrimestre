@@ -178,13 +178,13 @@ public class ConectionScript : LightenableObject {
     #region Lighten Methods
     private void CheckPlayerDistance()
     {
-        if (Vector3.Distance(target.position, transform.position) < target.GetComponent<PlayerController>().lanternDamageLength)
+        if (Vector3.Distance(target.position, transform.position) < GameManager.Instance.player.lanternDamageLength)
         {
-            target.GetComponent<PlayerController>().OnLightenObjectEnter(this.gameObject);
+            GameManager.Instance.player.OnLightenObjectEnter(this.gameObject);
         }
         else
         {
-            target.GetComponent<PlayerController>().OnLightenObjectExit(this.gameObject);
+            GameManager.Instance.player.OnLightenObjectExit(this.gameObject);
             OutsideLanternRange();
         }
     }
@@ -301,7 +301,7 @@ public class ConectionScript : LightenableObject {
             if (isSideDoor)
             {
                 CameraBehaviour cb = CameraBehaviour.Instance;
-                cb.ChangeCameraBehaviourState(CameraBehaviour.CamState.CrossDoor);
+                cb.ChangeCameraBehaviourState(CameraBehaviour.CameraState.CrossDoor);
                 cb.MoveAtPoint(transform.position, GameManager.Instance.GetPlayer().position.x > transform.position.x);
             }
             return true;

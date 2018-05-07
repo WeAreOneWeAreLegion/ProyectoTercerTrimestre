@@ -37,11 +37,11 @@ public class ChimneyObject : LightenableObject
     {
         if (Vector3.Distance(target.position, flareRenderer.transform.position) < target.GetComponent<PlayerController>().lanternDamageLength)
         {
-            target.GetComponent<PlayerController>().OnLightenPuzzleEnter(this.gameObject);
+            GameManager.Instance.player.OnLightenPuzzleEnter(this.gameObject);
         }
         else
         {
-            target.GetComponent<PlayerController>().OnLightenPuzzleExit(this.gameObject);
+            GameManager.Instance.player.OnLightenPuzzleExit(this.gameObject);
         }
     }
 
